@@ -1,0 +1,27 @@
+{
+  "name": "bc-toolbox",
+  "version": "1.0.0",
+  "description": "Bridgecrew utility scripts and more. ",
+  "main": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bridgecrewio/bc-toolbox.git"
+  },
+  "keywords": [
+    "bridgecrew"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bridgecrewio/bc-toolbox/issues"
+  },
+  "homepage": "https://github.com/bridgecrewio/bc-toolbox#readme",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "commander": "^9.0.0",
+    "fast-csv": "^4.3.6"
+  }
+}
