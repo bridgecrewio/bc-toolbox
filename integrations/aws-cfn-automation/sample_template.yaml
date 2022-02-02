@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Bridgecrew AWS Config Security Audit Integration
+Mappings:
+  BridgecrewEnvironment:
+    env:
+      organizationID: "890234264427"
+      SnsNameForConfirmCustomerDeployment: "handle-customer-actions"
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Parameters:
+          - ResourceNamePrefix
+          - ExternalID
+          - ApiToken
+    ParameterLabels:
+      ResourceNamePrefix:
+        default: Resource name prefix
+      ExternalID:
+        default: ExternalID
+      ApiToken:
+        default: API Token
+Parameters:
+  ResourceNamePrefix:
+    Description: >-
+      Names of resources created by the stack will be prefixed with this value
+      to ensure uniqueness.
+    Type: String
+    Default: bridgecrew
+    MinLength: '1'
+    MaxLength: '45'
+    AllowedPattern: '^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$'
+    ConstraintDescription: >-
+      Invalid resource name prefix value. Must match pattern
+      ^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$
+  ExternalID:
+    Description: >-
+      A V4 UUID value, generated with a tool such as https://www.uuidgenerator.net/version4 or https://www.npmjs.com/package/uuid.
+    Type: String
+    MinLength: '36'
+    MaxLength: '36'
+    AllowedPattern: '[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}'
+    ConstraintDescription: 'Invalid ExternalID value. Must be a a series of hexadecimal numbers separated by hyphens (length per segment: 8-4-4-4-12)'
+  ApiToken:
+    Description: >-
+      API Token from the Bridgecrew console (bridgecrew.cloud/integrations/api-token)
+    Type: String
+    MinLength: '36'
+    MaxLength: '36'
+    AllowedPattern: '[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}'
+    ConstraintDescription: 'Invalid ApiToken value. Must be a a series of hexadecimal numbers separated by hyphens (length per segment: 8-4-4-4-12)'
+Conditions: {}
+Resources:
+  BridgecrewCWSSACrossAccountAccessRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Join
+        - ''
+        - - !Ref ResourceNamePrefix
+          - '-bridgecrewcwssarole'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              AWS: !Join
+                - ''
+                - - 'arn:aws:iam::'
+                  - !FindInMap
+                    - BridgecrewEnvironment
+                    - env
+                    - organizationID
+                  - ':root'
+            Condition:
+              StringEquals:
+                'sts:ExternalId':
+                  Fn::GetAtt:
+                    - ExternalIdResource
+                    - UUID
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/SecurityAudit'
+        - 'arn:aws:iam::aws:policy/AWSCloudFormationReadOnlyAccess'
+      Policies:
+        - PolicyName: BridgecrewDescribePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Sid: AllowDescribingResources
+                Action:
+                  - ecr:GetLifecyclePolicy
+                  - lambda:Get*
+                  - s3:ListBucket
+                  - sns:GetSubscriptionAttributes
+                  - dynamodb:ListTagsOfResource
+                  - sns:ListTagsForResource
+                  - es:ListTags
+                Effect: Allow
+                Resource:
+                  - "*"
+  BridgecrewSnsCustomResource:
+    Type: 'Custom::BridgecrewSnsCustomResource'
+    Properties:
+      Type: AWS_CT_CFG
+      ServiceToken:
+        !Join
+          - ''
+          - - 'arn:aws:sns:'
+            - !Ref AWS::Region
+            - ":"
+            - !FindInMap
+                - BridgecrewEnvironment
+                - env
+                - organizationID
+            - ":"
+            - !FindInMap
+                - BridgecrewEnvironment
+                - env
+                - SnsNameForConfirmCustomerDeployment
+      IntegrationName: !Ref 'AWS::StackName'
+      CrossAccountRoleArn: !GetAtt
+        - BridgecrewCWSSACrossAccountAccessRole
+        - Arn
+      ExternalId: !Ref ExternalID
+      ApiToken: !Ref ApiToken
+      ActionType: "AWSConfigActivation"
+      Account: bridgecrew
+      TemplateVersion: 1.5
+      AWSAccountId: !Ref 'AWS::AccountId'
+  ExternalIdResource:
+    Type: 'Custom::GenerateUUID'
+    Properties:
+      ServiceToken: <ARN FOR THE LAMBDA YOU CREATED ABOVE>
+Outputs:
+  RoleARN:
+    Description: >-
+      Cross-account access role ARN to share with Bridgecrew for CloudTrail
+      integration
+    Value: !GetAtt
+      - BridgecrewCWSSACrossAccountAccessRole
+      - Arn
+  ExternalID:
+    Description: ExternalID to share with Bridgecrew for CloudTrail integration
+    Value: !Ref ExternalID
+  TemplateVersion:
+    Description: Bridgecrew.io template version
+    Value: 1.5
