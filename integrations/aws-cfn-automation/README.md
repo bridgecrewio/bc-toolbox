@@ -29,7 +29,7 @@ You will need [this](https://bc-cf-template-890234264427-prod.s3.us-west-2.amazo
             - UUID
     ```
 
-    Refer to `sample_template.yaml` for an example.
+    Refer to `sample_template.yaml` for an example. _However, please make sure to start with the template linked above, as the template may change over time._
 
 3. You can now use this template to deploy account integrations in any automated fashion without touching the Bridgecrew console.
 
