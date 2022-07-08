@@ -25,10 +25,12 @@ def run():
                 print(f"{p.get('id')}: {p.get('title')} --> is a visual editor policy")
                 continue
             yaml_code = yaml.safe_load(code)
-            severity = yaml_code['metadata']['severity']
-            if severity.lower() == 'critical':
-                print(f"changing critical severity to high for {p.get('id')}")
-                yaml_code['metadata']['severity'] = "high"
+            # If the export is form Prisma Cloud Code Security - uncommnt the lines below.
+            # The reson being - PCCS does not support critical severity as of 07/08/22
+            #  severity = yaml_code['metadata']['severity']
+            #  if severity.lower() == 'critical':
+                #  print(f"changing critical severity to high for {p.get('id')}")
+                #  yaml_code['metadata']['severity'] = "high"
             print(f"writing: {p.get('id')}")
             with open(f"{p.get('id')}.yaml", '+w') as f:
                 f.write(yaml.dump(yaml_code, sort_keys=False))
