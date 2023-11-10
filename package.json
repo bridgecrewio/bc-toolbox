@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/bridgecrewio/bc-toolbox#readme",
   "dependencies": {
-    "axios": "^0.25.0",
+    "axios": "^1.6.0",
     "commander": "^9.0.0",
     "fast-csv": "^4.3.6"
   }
